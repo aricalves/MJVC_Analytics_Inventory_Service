@@ -1,8 +1,3 @@
-// OLD: AKIAIBCT2EKPC2W2KBMA
-// OLD: noXX78ihwWtKGhSfYfedABtoCnPboqQDfRSBiDXo
-// const AWS = require('aws-sdk');
-// AWS.config.update({accessKeyId: 'AKIAILEAAJCZXTA2PSDQ', secretAccessKey: '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'});
-// const sqs = new AWS.SQS({region:'us-east-2'});
 const express = require('express');
 const bp = require('body-parser').json();
 Promise = require('bluebird');
