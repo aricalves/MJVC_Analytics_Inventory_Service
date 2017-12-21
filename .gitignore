@@ -10,6 +10,10 @@ config/test.json
 # Logs
 logs
 *.log
+*.txt
+data_gen
+
+inventory/src/data/*.*
 
 # Runtime data
 pids
