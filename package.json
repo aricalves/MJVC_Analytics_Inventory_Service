@@ -1,5 +1,5 @@
 {
-  "name": "actual_code",
+  "name": "inventory",
   "version": "1.0.0",
   "description": "",
   "main": "hostEntry.js",
@@ -10,6 +10,7 @@
     "bluebird": "^3.5.1",
     "body-parser": "^1.18.2",
     "chai": "^4.1.2",
+    "easy-sqs": "^0.5.3",
     "express": "^4.16.2",
     "faker": "^4.1.0",
     "fs": "0.0.1-security",
@@ -23,7 +24,7 @@
   },
   "scripts": {
     "load-test": "echo \"GET http://localhost:8080\" | vegeta attack -duration=5s -rate=1000 | vegeta report",
-    "unit-test": "mocha",
+    "unit-test": "mocha inventory/test/test.js",
     "start": "node inventory/src/server/index.js"
   },
   "author": "",

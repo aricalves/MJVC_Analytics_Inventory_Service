@@ -51,8 +51,7 @@ describe('helpers', () => {
     });
 
     it('should reject non-error objects', () => {
-      const notError = 'bar';
-      expect(helpers.handleError(notError, '/test')).to.eql('Non-error sent to #handleError()');
+      expect(helpers.handleError({}, '/test')).to.eql('Non-error sent to #handleError()');
     });
   });
 

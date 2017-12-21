@@ -1,18 +1,41 @@
-const AWS = require('aws-sdk');
-AWS.config.update({accessKeyId: 'AKIAIBCT2EKPC2W2KBMA', secretAccessKey: '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'});
+const easy = require('easy-sqs');
 
-const sqs = new AWS.SQS({region:'us-east-2'}); 
+const secret = require('../../config/aws_config');
+const awsConfig = { 'accessKeyId': secret.amazon_keys.ACCESS_KEY, 'secretAccessKey': secret.amazon_keys.SECRET, 'region': secret.amazon_keys.REGION };
 
-const msg = { payload: 'a message' };
+const url = secret.amazon_keys.QUEUE_URL;
+const client = easy.createClient(awsConfig);
 
-const sqsParams = {
-  MessageBody: JSON.stringify(msg),
-  QueueUrl: ' https://sqs.us-east-2.amazonaws.com/489670500872/host_airbnb'
+const queue = client.getQueueSync(url, (err, q) => {
+  if (err) { throw err; }
+});
+console.log(`Connected to ${queue.queueName.split('/')[4]}...`);
+
+const deleteMessage = (msg) => {
+  queue.deleteMessage(msg, err => {
+    console.error(err);
+  });
 };
 
-sqs.sendMessage(sqsParams, function(err, data) {
-  if (err) {
-    console.log('ERR', err);
-  }
-  console.log(data);
-});
+const checkQueue = () => {
+  queue.getMessage((err, msg) => {
+    if (err) { throw err; }
+    console.log(msg['Body']);
+    deleteMessage(msg);
+  });
+};
+
+const sendMessage = (message) => {
+  let msg = JSON.stringify(message);
+  queue.sendMessage(msg, function(err) {
+    console.log('sent!');
+    if (err) { console.error('send failed!', err); }
+  });
+};
+
+// for (let i = 0; i < 10; i++) {
+//   sendMessage(i);
+// }
+
+// checkQueue();
+
