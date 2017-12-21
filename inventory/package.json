@@ -1,0 +1,36 @@
+{
+  "name": "actual_code",
+  "version": "1.0.0",
+  "description": "",
+  "main": "hostEntry.js",
+  "dependencies": {
+    "aws-sdk": "^2.171.0",
+    "babel-cli": "^6.26.0",
+    "babel-core": "^6.26.0",
+    "bluebird": "^3.5.1",
+    "body-parser": "^1.18.2",
+    "chai": "^4.1.2",
+    "express": "^4.16.2",
+    "faker": "^4.1.0",
+    "fs": "0.0.1-security",
+    "pg": "^7.4.0",
+    "sequelize": "^4.28.1"
+  },
+  "devDependencies": {
+    "babel": "^6.23.0",
+    "mocha": "^4.0.1",
+    "supertest": "^3.0.0"
+  },
+  "scripts": {
+    "load-test": "echo \"GET http://localhost:8080\" | vegeta attack -duration=5s -rate=1000 | vegeta report",
+    "unit-test": "mocha",
+    "start": "node inventory/src/server/index.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "babel": {
+    "presets": [
+      "es2015"
+    ]
+  }
+}
