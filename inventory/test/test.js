@@ -73,30 +73,96 @@ describe('inventory server', () => {
         .delete('/experiences/manage/100')
         .expect(200)
         .end((error, response) => {
-          if (error) { done(error); }
-          assert(response, 'Experience 100 does not exist');
+          if (error) { return done(error); }
+          expect(response.text).to.eql('Experience 100 does not exist');
           done();
         });
     });
-    it('should delete specified experience', done => { // This has a random chance of failing
+    xit('should delete specified experience', done => { // This has a random chance of failing
       const randomExperience = Math.trunc(Math.random() * 10000000);
       server
         .delete(`/experiences/manage/${randomExperience}`)
         .expect(200)
         .end((error, response) => {
-          if (error) { done(error); }
-          assert(response, `Deleted experience with id: ${randomExperience}`);
+          if (error) { return done(error); }
+          expect(response.text).to.eql(`Deleted experience with id: ${randomExperience}`);
         });
       server
         .delete(`/experiences/manage/${randomExperience}`)
         .expect(200)
         .end((error, response) => {
-          if (error) { done(error); }
-          assert(response, `Experience ${randomExperience} does not exist`);
+          if (error) { return done(error); }
+          expect(response.text).to.eql(`Experience ${randomExperience} does not exist`);
           done();
         });
 
     });
+  });
+
+  describe('/experiences/find/:locationId', () => {
+
+    xit('should return the specified location id and query criteria', done => {
+      server
+        .get('/experiences/find/12345')
+        .query({ sortBy: 'rating' })
+        .expect(200)
+        .end((e, response) => {
+          if (e) { return done(e); }
+          expect(response.text).to.eql('[12345, rating]');
+          done();
+        });
+    });
+
+    it('should not fail when no query input', done => {
+      server
+        .get('/experiences/find/-1681809857')
+        .expect(200)
+        .end((e, response) => {
+          if (e) { return done(e); }
+          expect(JSON.parse(response.text).length).to.eql(36);
+          done();
+        });
+    });
+
+    it('should return 36 experiences', done => {
+      server
+        .get('/experiences/find/-1681809857')
+        .query({ sortBy: 'price' })
+        .expect(200)
+        .end((e, response) => {
+          if (e) { return done(e); }
+          expect(JSON.parse(response.text).length).to.eql(36);
+          done();
+        });
+    });
+
+    it('should return experience objects', done => {
+      const randomIndex = Math.floor(Math.random() * 36);
+      const experienceClone = {
+        id: 1234,
+        title: 'foo',
+        description: 'bar',
+        photo_url: 'https://lorempixel.con/640/400/cats',
+        is_available: false,
+        is_popular: false,
+        rating: 4,
+        review_count: 4,
+        price: 120,
+        locationId: 1234,
+        hostId: 12345,
+        categoryId: 12345
+      };
+      server
+        .get('/experiences/find/-1681809857')
+        .expect(200)
+        .end((e, response) => {
+          if (e) { return done(e); }
+          const randomExperience = JSON.parse(response.text)[randomIndex];
+          expect(Object.keys(randomExperience)).to.eql(Object.keys(experienceClone));
+          done();
+        });
+    });
+
   });
 
 });

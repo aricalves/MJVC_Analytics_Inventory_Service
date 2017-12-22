@@ -1,17 +1,18 @@
 const easy = require('easy-sqs');
 
-const secret = require('../../config/aws_config');
+const secret = require('../../config/config');
+
 const awsConfig = { 'accessKeyId': secret.amazon_keys.ACCESS_KEY, 'secretAccessKey': secret.amazon_keys.SECRET, 'region': secret.amazon_keys.REGION };
 
 const url = secret.amazon_keys.QUEUE_URL;
 const client = easy.createClient(awsConfig);
 
-const queue = client.getQueueSync(url, (err, q) => {
+const queue = client.getQueueSync(url, err => {
   if (err) { throw err; }
 });
 console.log(`Connected to ${queue.queueName.split('/')[4]}...`);
 
-const deleteMessage = (msg) => {
+const deleteMessage = msg => {
   queue.deleteMessage(msg, err => {
     console.error(err);
   });

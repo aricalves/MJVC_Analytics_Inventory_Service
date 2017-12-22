@@ -25,16 +25,20 @@ module.exports = {
   },
   handleError(error, path) {
     if (!(error instanceof Error)) {
-      const message = `Non-error sent to error handler at: ${new Date().toString()}\nFrom: ${path}\nNon-error: ${error}\n${'-'.repeat(45)}\n`;
-      fs.appendFile('src/data/ErrorLog.txt', message, e => {
-        if (e) { throw error; }
-      });
+      if (path !== '/test') {
+        const message = `Non-error sent to error handler at: ${new Date().toString()}\nFrom: ${path}\nNon-error: ${error}\n${'-'.repeat(45)}\n`;
+        fs.appendFile('inventory/src/data/ErrorLog.txt', message, e => {
+          if (e) { throw error; }
+        });
+      }
       return 'Non-error sent to #handleError()';
     }
-    const message = `Error sent to error handler at: ${new Date().toString()}\nFrom: ${path}\nError: ${error}\n${'-'.repeat(45)}\n`;
-    fs.appendFile('src/data/ErrorLog.txt', message, e => {
-      if (e) { throw error; }
-    });
+    if (path !== '/test') {
+      const message = `Error sent to error handler at: ${new Date().toString()}\nFrom: ${path}\nError: ${error}\n${'-'.repeat(45)}\n`;
+      fs.appendFile('inventory/src/data/ErrorLog.txt', message, e => {
+        if (e) { throw error; }
+      });
+    }
     return 'Error has been logged.';
   }
 };
