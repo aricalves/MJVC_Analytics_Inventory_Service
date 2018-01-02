@@ -1,5 +1,5 @@
 {
-  "name": "actual_code",
+  "name": "inventory",
   "version": "1.0.0",
   "description": "",
   "main": "hostEntry.js",
@@ -10,9 +10,12 @@
     "bluebird": "^3.5.1",
     "body-parser": "^1.18.2",
     "chai": "^4.1.2",
+    "dotenv": "^4.0.0",
+    "easy-sqs": "^0.5.3",
     "express": "^4.16.2",
     "faker": "^4.1.0",
     "fs": "0.0.1-security",
+    "lodash.flatten": "^4.4.0",
     "pg": "^7.4.0",
     "sequelize": "^4.28.1"
   },
@@ -22,9 +25,9 @@
     "supertest": "^3.0.0"
   },
   "scripts": {
-    "load-test": "echo \"GET http://localhost:8080\" | vegeta attack -duration=5s -rate=1000 | vegeta report",
-    "unit-test": "mocha",
-    "start": "node inventory/src/server/index.js"
+    "load-test": "echo \"PATCH http://localhost:8080/experiences/manage/0\" | vegeta attack -duration=5s -rate=1000 | vegeta report",
+    "test": "mocha --timeout 5000 inventory/test/test.js",
+    "start": "nodemon inventory/src/server/index.js"
   },
   "author": "",
   "license": "ISC",

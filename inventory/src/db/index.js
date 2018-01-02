@@ -1,6 +1,7 @@
 const Sequelize = require('sequelize');
+const config = require('../../config/config');
 
-const sequelize = new Sequelize('anotha', 'aric', 'Inc0rrect', {
+const sequelize = new Sequelize(config.db.DB_NAME, config.db.USER, config.db.PASSWORD, {
   host: 'localhost',
   dialect: 'postgres',
   operatorsAliases: false,
@@ -100,10 +101,29 @@ const deleteExperience = id => Experience.destroy({ where: { id } });
 
 const deleteReview = id => Review.destroy({ where: { id } });
 
+const findPopularLocations = (id, sort, page) => (
+  Experience.findAll({
+    where: { locationId: id, is_popular: true },
+    // TODO index price and or rating column
+    order: [sort],
+    limit: 36
+  })
+);
+
+const findLocations = (id, sort, limit, page, offset) => (
+  Experience.findAll({
+    where: { locationId: id, is_popular: false },
+    order: [sort],
+    limit,
+  })
+);
+
 exports.addExperience = addExperience;
 exports.addHost = addHost;
 exports.addReview = addReview;
 exports.deleteHost = deleteHost;
 exports.deleteExperience = deleteExperience;
 exports.deleteReview = deleteReview;
+exports.findLocations = findLocations;
+exports.findPopularLocations = findPopularLocations;
 exports.syncTables = syncTables;

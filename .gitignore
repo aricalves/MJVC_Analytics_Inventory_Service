@@ -2,10 +2,12 @@
 config/development.json
 config/production.json
 config/staging.json
-config/test.json
+config/*
 
 # OS X
 .DS_Store
+
+.env
 
 # Logs
 logs

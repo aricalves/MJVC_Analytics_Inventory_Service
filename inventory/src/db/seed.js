@@ -26,6 +26,7 @@ const getRandomLocationId = () => {
   return ids[index];
 };
 
+// THIS ONE WILL DEFINITELY BREAK SOMETHING
 const generateExperiences = function(amt, count) {
   const stream = fs.createWriteStream('src/data/experiences.csv', { 'flags': 'a' });
   let exp = '';

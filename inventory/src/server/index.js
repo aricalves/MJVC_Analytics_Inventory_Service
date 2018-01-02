@@ -1,10 +1,6 @@
-// OLD: AKIAIBCT2EKPC2W2KBMA
-// OLD: noXX78ihwWtKGhSfYfedABtoCnPboqQDfRSBiDXo
-// const AWS = require('aws-sdk');
-// AWS.config.update({accessKeyId: 'AKIAILEAAJCZXTA2PSDQ', secretAccessKey: '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'});
-// const sqs = new AWS.SQS({region:'us-east-2'});
 const express = require('express');
 const bp = require('body-parser').json();
+const flatten = require('lodash.flatten');
 Promise = require('bluebird');
 
 const app = express();
@@ -19,21 +15,45 @@ app.options('/', (req, res) => res.send('GET, POST, DELETE, OPTIONS'));
 app.get('/', (req, res) => res.sendStatus(200));
 
 app.get('/experiences/find/:locationId', (req, res) => {
+  const location = Number(req.params.locationId);
+  const sortOrder = req.query.sortBy || 'id';
+  const page = req.query.page || 1;
   // query the data base for the location's 36 popular experiences,
+  db.findPopularLocations(location, sortOrder, page)
   //   if the location has popular experiences send them over
-  //     then search for unpopular experiences sorted by ? TODO limited by 12
-  //     then search again with an offset of (36 + 12) limit 12
-  //     repeat until we reach 96 sent, done.
-  //   if the location doesnt have any popular experiences query again for location id sorted by ? TODO limit 36
-  //     then search again with the same criteria offset 36 limit 12
-  //     then search again with an offset of (36 + 12) limit 12
-  //     repeat until we reach 96 sent, done.
+    .then(popExperiences => {
+      if (popExperiences.length === 36) {
+        res.send(popExperiences);
+        return false;
+      }
+      return db.findLocations(location, sortOrder, 36 - popExperiences.length, page)
+        .then(experiences => [experiences, popExperiences]);
+    })
+    .catch(e => help.handleError(e, `/experiences/find${location}`))
+    .then(locations => {
+      if (!locations) { return sortOrder; }
+      if (locations[0].length === 0) {
+        res.send('No experiecnes available for that location.');
+        return false;
+      }
+      res.send(flatten(locations));
+      return sortOrder;
+    })
+    .catch(e => help.handleError(e, `/experiences/find${location}`))
+    .then(sort => {
+      if (!sort) { return; }
+      let offset = 36;
+      // then search for unpopular experiences sorted by price/rating limited by 12
+      db.findLocations(id, sort, 12, page, offset);
+      // then search again with an offset of (36 + 12) limit 12
+      // repeat until we reach 96 sent, done.
+    });
   
 });
 
 app.get('/experiences/cats', (req, res) => res.send('<img src=https://lorempixel.com/1280/800/cats></img>'));
 
-app.get('/experiences/add/host', (req, res) => {
+app.get('/experiences/host/add', (req, res) => {
   Promise.resolve(help.parseHost(req.url))
     .then(host => db.addHost(host))
     .then(() => res.send('Successfully added host'))
@@ -106,5 +126,3 @@ app.delete('/experiences/delete/review/:reviewId', (req, res) => {
       return help.handleError(e, `/experiences/delete/review/${req.params.reviewId}`);
     });
 });
-
-exports.app = app;
