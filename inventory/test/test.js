@@ -1,9 +1,12 @@
+require('dotenv').config();
 const assert = require('assert');
 const supertest = require('supertest');
 const expect = require('chai').expect;
-const server = supertest('http://localhost:8080');
+const server = supertest(`http://localhost:${process.env.PORT}`);
 
 const helpers = require('../src/server/helpers');
+
+const experienceClone = { id: 1234, title: 'foo', description: 'bar', photo_url: 'https://lorempixel.con/640/400/cats', is_available: false, is_popular: false, rating: 4, review_count: 4, price: 120, locationId: -1560504360, hostId: 12345, categoryId: 12345 };
 
 describe('helpers', () => {
 
@@ -59,7 +62,7 @@ describe('helpers', () => {
 
 describe('inventory server', () => {
 
-  describe('/ (root)', () => {
+  describe('/', () => {
     it('should be online', (done) => {
       server
         .get('/')
@@ -68,9 +71,11 @@ describe('inventory server', () => {
   });
 
   describe('/experiences/manage', () => {
+
     it('should respond with an experience id', done => {
       server
-        .delete('/experiences/manage/100')
+        .patch('/experiences/manage/100')
+        .send({ 'action': 'delete' })
         .expect(200)
         .end((error, response) => {
           if (error) { return done(error); }
@@ -78,44 +83,67 @@ describe('inventory server', () => {
           done();
         });
     });
-    xit('should delete specified experience', done => { // This has a random chance of failing
-      const randomExperience = Math.trunc(Math.random() * 10000000);
-      server
-        .delete(`/experiences/manage/${randomExperience}`)
-        .expect(200)
-        .end((error, response) => {
-          if (error) { return done(error); }
-          expect(response.text).to.eql(`Deleted experience with id: ${randomExperience}`);
-        });
-      server
-        .delete(`/experiences/manage/${randomExperience}`)
-        .expect(200)
-        .end((error, response) => {
-          if (error) { return done(error); }
-          expect(response.text).to.eql(`Experience ${randomExperience} does not exist`);
-          done();
-        });
 
+    it('should delete specified experience', () => {
+      return server
+        .post('/experiences/add')
+        .send(experienceClone)
+        .expect(200)
+        .then(res => {
+          expect(res.text).to.eql('Your experience has been added.');
+        })
+        .then(() => (
+          server
+            .patch('/experiences/manage/1234')
+            .send({ 'action': 'delete' })
+            .expect(200)
+        ))
+        .then(res => {
+          expect(res.text).to.eql('Deleted experience with id: 1234');
+        })
+        .then(() => (
+          server
+            .patch('/experiences/manage/1234')
+            .send({ 'action': 'delete' })
+            .expect(200)
+        ))
+        .then(res => {
+          expect(res.text).to.eql('Experience 1234 does not exist');
+        });
+    });
+
+    it('should pause a specified experience', () => {
+      server
+        .patch('/experiences/manage/12345')
+        .send({ 'action': 'pause' })
+        .expect(200)
+        .then(res => {
+          expect(res.text).to.eql('paused experience with id: 12345');
+        });
+    });
+    
+    it('should unpause a specified experience', () => {
+      server
+        .patch('/experiences/manage/12345')
+        .send({ 'action': 'unpause' })
+        .expect(200)
+        .then(res => {
+          expect(res.text).to.eql('unpaused experience with id: 12345');
+        });
     });
   });
 
   describe('/experiences/find/:locationId', () => {
 
-    xit('should return the specified location id and query criteria', done => {
-      server
-        .get('/experiences/find/12345')
-        .query({ sortBy: 'rating' })
-        .expect(200)
-        .end((e, response) => {
-          if (e) { return done(e); }
-          expect(response.text).to.eql('[12345, rating]');
-          done();
-        });
+    const locations = [58272262, 309509055, -1029232454, 424363964, -1560504030, 405528837, -1094817086, 964775685, 309508705, 58272471, -1574806155, -147471123, -559866342, -365845644, -1674988926, -1094817096, 1143831738, -837388837, 424363948, -1247473086];
+    beforeEach(() => {
+      const randomIndex = Math.trunc(Math.random() * locations.length);
+      return randomLocation = locations[randomIndex];
     });
 
     it('should not fail when no query input', done => {
       server
-        .get('/experiences/find/-1681809857')
+        .get(`/experiences/find/${randomLocation}`)
         .expect(200)
         .end((e, response) => {
           if (e) { return done(e); }
@@ -126,7 +154,7 @@ describe('inventory server', () => {
 
     it('should return 36 experiences', done => {
       server
-        .get('/experiences/find/-1681809857')
+        .get(`/experiences/find/${randomLocation}`)
         .query({ sortBy: 'price' })
         .expect(200)
         .end((e, response) => {
@@ -138,22 +166,8 @@ describe('inventory server', () => {
 
     it('should return experience objects', done => {
       const randomIndex = Math.floor(Math.random() * 36);
-      const experienceClone = {
-        id: 1234,
-        title: 'foo',
-        description: 'bar',
-        photo_url: 'https://lorempixel.con/640/400/cats',
-        is_available: false,
-        is_popular: false,
-        rating: 4,
-        review_count: 4,
-        price: 120,
-        locationId: 1234,
-        hostId: 12345,
-        categoryId: 12345
-      };
       server
-        .get('/experiences/find/-1681809857')
+        .get(`/experiences/find/${randomLocation}`)
         .expect(200)
         .end((e, response) => {
           if (e) { return done(e); }
