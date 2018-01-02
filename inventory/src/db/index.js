@@ -1,75 +1,27 @@
-const Sequelize = require('sequelize');
-const config = require('../../config/config');
+const models = require('./models');
 
-const sequelize = new Sequelize(config.db.DB_NAME, config.db.USER, config.db.PASSWORD, {
-  host: 'localhost',
-  dialect: 'postgres',
-  operatorsAliases: false,
-  define: { timestamps: false }
-});
+models.sequelize.authenticate()
+  .tap(() => console.log('sequelize is listening...'))
+  .catch(err => console.error('Unable to connect to the database:', err));
 
-sequelize.authenticate()
-  .tap(() => {
-    console.log('sequelize is listening...');
-  })
-  .catch(err => {
-    console.error('Unable to connect to the database:', err);
-  });
+const syncTables = () => Promise.resolve(models.sequelize.sync());
 
-const syncTables = () => Promise.resolve(sequelize.sync());
+/******************** DEFINE FOREIGN KEYS ***********************/
 
-/******************** DEFINE MODELS ***********************/
+models.Review.belongsTo(models.Experience);
+models.Location.hasMany(models.Experience);
+models.Host.hasMany(models.Experience);
+models.Category.hasMany(models.Experience);
 
-const Review = sequelize.define('reviews', {
-  user_id: Sequelize.INTEGER,
-  rating: Sequelize.INTEGER,
-  body: Sequelize.TEXT,
-  timestamp: Sequelize.DATE
-});
-
-const Category = sequelize.define('categories', {
-  title: Sequelize.STRING,
-});
-
-const Host = sequelize.define('hosts', {
-  first_name: Sequelize.STRING,
-  last_name: Sequelize.STRING,
-  description: Sequelize.TEXT,
-  photo_url: Sequelize.TEXT,
-});
-
-const Location = sequelize.define('locations', {
-  country: Sequelize.STRING,
-  state: Sequelize.STRING,
-  city: Sequelize.STRING,
-  address: Sequelize.STRING
-});
-
-const Experience = sequelize.define('experiences', {
-  title: Sequelize.STRING,
-  description: Sequelize.TEXT,
-  photo_url: Sequelize.TEXT,
-  is_available: Sequelize.BOOLEAN,
-  is_popular: Sequelize.BOOLEAN,
-  rating: Sequelize.INTEGER,
-  review_count: Sequelize.INTEGER,
-  price: Sequelize.INTEGER,
-});
-
-Review.belongsTo(Experience);
-Location.hasMany(Experience);
-Host.hasMany(Experience);
-Category.hasMany(Experience);
-
-/****************** END DEFINE MODELS *********************/
+/************************ LOGIC BELOW ***************************/
 
 const addExperience = (experience) => {
-  const id = Math.trunc(Math.random() * 200000000) + 1000000;
-  return Experience.findCreateFind({
+  const id = experience.id || Math.trunc(Math.random() * 200000000) + 1000000;
+  return models.Experience.findCreateFind({
     where: {
-      locationId: experience.location_id,
+      locationId: experience.locationId,
       title: experience.title,
-      hostId: experience.host_id
+      hostId: experience.hostId
     },
     defaults: {
       id,
@@ -80,43 +32,44 @@ const addExperience = (experience) => {
       rating: experience.rating,
       review_count: experience.review_count,
       price: experience.price,
-      categoryId: experience.category_id
+      categoryId: experience.categoryId
     }
   });
 };
 
 const addHost = ({ first_name, last_name, description, photo_url }) => {
   const id = Math.trunc(Math.random() * 200000000) + 9000000;
-  return Host.findCreateFind({ where: { first_name }, defaults: { id, last_name, description, photo_url }});
+  return models.Host.findCreateFind({ where: { first_name, last_name }, defaults: { id, description, photo_url }});
 };
 
 const addReview = ({ user_id, rating, body, timestamp, experienceId }) => {
   const id = Math.trunc(Math.random() * 200000000) + 6000000;
-  return Review.findCreateFind({ where: { body, user_id }, defaults: { id, rating, timestamp, experienceId } });
+  return models.Review.findCreateFind({ where: { body, user_id }, defaults: { id, rating, timestamp, experienceId } });
 };
 
-const deleteHost = id => Host.destroy({ where: { id } });
+const deleteHost = id => models.Host.destroy({ where: { id } });
 
-const deleteExperience = id => Experience.destroy({ where: { id } });
+const deleteExperience = id => models.Experience.destroy({ where: { id } });
 
-const deleteReview = id => Review.destroy({ where: { id } });
+const deleteReview = id => models.Review.destroy({ where: { id } });
 
-const findPopularLocations = (id, sort, page) => (
-  Experience.findAll({
-    where: { locationId: id, is_popular: true },
-    // TODO index price and or rating column
-    order: [sort],
-    limit: 36
-  })
-);
+const findPopularLocations = (id, sort, page) => {
+  return page > 1 ?
+    Promise.resolve([]) :
+    models.Experience.findAll({ where: { locationId: id, is_popular: true }, order: [ sort ], limit: 36 });
+};
 
-const findLocations = (id, sort, limit, page, offset) => (
-  Experience.findAll({
-    where: { locationId: id, is_popular: false },
-    order: [sort],
-    limit,
-  })
-);
+const findLocations = (id, sort, limit, page, offset) => {
+  offset = page > 1 ? offset + (96 * (page - 1)) : offset;
+  return models.Experience.findAll({ where: { locationId: id, is_popular: false }, order: [ sort ], limit, offset, });
+};
+
+const manageExperience = (id, action) => {
+  const active = action === 'unpause';
+  return models.Experience.update({ is_available: active }, { where: { id } });
+};
+
+const updatePopularity = () => 'Updated Popularity';
 
 exports.addExperience = addExperience;
 exports.addHost = addHost;
@@ -126,4 +79,6 @@ exports.deleteExperience = deleteExperience;
 exports.deleteReview = deleteReview;
 exports.findLocations = findLocations;
 exports.findPopularLocations = findPopularLocations;
+exports.manageExperience = manageExperience;
 exports.syncTables = syncTables;
+exports.updatePopularity = updatePopularity;

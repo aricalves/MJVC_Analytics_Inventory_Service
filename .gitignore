@@ -2,8 +2,7 @@
 config/development.json
 config/production.json
 config/staging.json
-config/*
-
+inventory/config/
 # OS X
 .DS_Store
 

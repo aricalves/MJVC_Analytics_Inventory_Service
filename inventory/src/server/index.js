@@ -1,4 +1,5 @@
 const express = require('express');
+require('dotenv').config();
 const bp = require('body-parser').json();
 const flatten = require('lodash.flatten');
 Promise = require('bluebird');
@@ -6,63 +7,54 @@ Promise = require('bluebird');
 const app = express();
 const db = require('../db/index');
 const help = require('./helpers');
+const sendExperiences = require('./workers/app_queue').sendExperiences;
+const reportExperienceUpdate = require('./workers/aggregator_queue').manageExperience;
 
 db.syncTables()
-  .then(() => app.listen(8080, () => console.log('listening on 8080')));
+  .then(() => app.listen(process.env.PORT, () => console.log(`listening on ${process.env.PORT}`)));
 
-app.options('/', (req, res) => res.send('GET, POST, DELETE, OPTIONS'));
+app.options('/', (req, res) => res.send('GET, PATCH, POST, OPTIONS'));
 
 app.get('/', (req, res) => res.sendStatus(200));
 
 app.get('/experiences/find/:locationId', (req, res) => {
-  const location = Number(req.params.locationId);
+  const locationId = Number(req.params.locationId);
   const sortOrder = req.query.sortBy || 'id';
   const page = req.query.page || 1;
-  // query the data base for the location's 36 popular experiences,
-  db.findPopularLocations(location, sortOrder, page)
-  //   if the location has popular experiences send them over
+  db.findPopularLocations(locationId, sortOrder, page)
     .then(popExperiences => {
       if (popExperiences.length === 36) {
         res.send(popExperiences);
         return false;
       }
-      return db.findLocations(location, sortOrder, 36 - popExperiences.length, page)
+      return db.findLocations(locationId, sortOrder, 36 - popExperiences.length, page, 0)
         .then(experiences => [experiences, popExperiences]);
     })
-    .catch(e => help.handleError(e, `/experiences/find${location}`))
+    .catch(e => help.handleError(e, `/experiences/find/${locationId}`))
     .then(locations => {
       if (!locations) { return sortOrder; }
       if (locations[0].length === 0) {
-        res.send('No experiecnes available for that location.');
+        res.send('No experiences available for that location.');
         return false;
       }
       res.send(flatten(locations));
       return sortOrder;
     })
-    .catch(e => help.handleError(e, `/experiences/find${location}`))
+    .catch(e => help.handleError(e, `/experiences/find/${location}`))
     .then(sort => {
       if (!sort) { return; }
       let offset = 36;
-      // then search for unpopular experiences sorted by price/rating limited by 12
-      db.findLocations(id, sort, 12, page, offset);
-      // then search again with an offset of (36 + 12) limit 12
-      // repeat until we reach 96 sent, done.
+      while (offset <= 84) {
+        db.findLocations(locationId, sort, 12, page, offset)
+          .then(payload => sendExperiences(payload));
+        offset += 12;
+      }
+      offset = 36;
     });
-  
 });
 
 app.get('/experiences/cats', (req, res) => res.send('<img src=https://lorempixel.com/1280/800/cats></img>'));
 
-app.get('/experiences/host/add', (req, res) => {
-  Promise.resolve(help.parseHost(req.url))
-    .then(host => db.addHost(host))
-    .then(() => res.send('Successfully added host'))
-    .catch(e => {
-      help.handleError(e, 'experiences/add/host');
-      res.send('Encountered an error while entering host details.');
-    });
-});
-  
 app.post('/experiences/add', bp, (req, res) => {
   db.addExperience(req.body)
     .tapCatch(dbResponse => {
@@ -71,58 +63,49 @@ app.post('/experiences/add', bp, (req, res) => {
         throw help.handleError(dbResponse, '/experiences/add');
       }
     })
-    .then(dbResponse => {
+    .tap(dbResponse => {
       const message = dbResponse[1] ? 'Your experience has been added.' : 'This experience already exists!';
       res.send(message);
+    })
+    .then(dbResponse => { 
+      if (dbResponse[1]) {
+        const experience = dbResponse[0].dataValues;
+        experience.action = 'add';
+        reportExperienceUpdate(experience);
+      }
     })
     .catch(e => console.error(e));
 });
 
-app.post('/experiences/add/review', bp, (req, res) => {
-  db.addReview(req.body)
-    .then(() => res.send('Successfully added review'))
-    .catch(e => {
-      help.handleError(e, '/experiences/add/review');
-      res.send('Encountered an error while entering your review.');
-    });
-});
-
-app.delete('/experiences/manage/:experienceId', (req, res) => {
-  db.deleteExperience(req.params.experienceId)
-    .then(dbResponse => {
-      if (dbResponse) {
-        return res.send(`Deleted experience with id: ${req.params.experienceId}`);
-      }
-      throw dbResponse;
-    })
-    .catch(e => {
-      if (typeof e === 'number') {
-        return res.send(`Experience ${req.params.experienceId} does not exist`);
-      }
-      help.handleError(e, `/experiences/manage/${req.params.experienceId}`);
-    });
-});
-
-app.delete('/experiences/delete/host/:userId', (req, res) => {
-  db.deleteHost(req.params.userId)
-    .then(dbResponse => {
-      const message = dbResponse ? 'Host has been deleted.' : 'Host does not exist.';
-      res.send(message);
-    })
-    .catch(e => {
-      res.send('Host cannot be deleted at this time.');
-      return help.handleError(e, `/experiences/delete/host/${req.params.userId}`);
-    });
-});
-
-app.delete('/experiences/delete/review/:reviewId', (req, res) => {
-  db.deleteReview(req.params.reviewId)
-    .then(dbResponse => {
-      const message = dbResponse ? 'Your review has been deleted.' : 'Review does not exist.';
-      res.send(message);
-    })
-    .catch(e => {
-      res.send('Encountered a problem deleting review.');
-      return help.handleError(e, `/experiences/delete/review/${req.params.reviewId}`);
-    });
+app.patch('/experiences/manage/:experienceId', bp, (req, res) => {
+  const id = req.params.experienceId;
+  const { action } = req.body;
+  if (action === 'delete') {
+    db.deleteExperience(id)
+      .then(dbResponse => {
+        if (dbResponse) {
+          reportExperienceUpdate({ id, action });
+          return res.send(`Deleted experience with id: ${id}`);
+        }
+        throw dbResponse;
+      })
+      .catch(e => {
+        if (typeof e === 'number') {
+          return res.send(`Experience ${id} does not exist`);
+        }
+        help.handleError(e, `/experiences/manage/${id}`);
+      });
+  } else {
+    db.manageExperience(id, action)
+      .then(didUpdate => {
+        if (didUpdate[0]) {
+          reportExperienceUpdate({ id, action });
+          res.send(`${action}d experience with id: ${id}`);
+        } else {
+          res.send(`Can not update experience with id: ${id} at this time.`);
+          throw didUpdate;
+        }
+      })
+      .catch(e => help.handleError(e, `/experiences/manage/${id}`));
+  }
 });
