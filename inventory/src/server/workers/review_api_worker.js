@@ -47,4 +47,4 @@ const sendMessage = (message) => {
   });
 };
 
-setInterval(() => { checkReviewQueue(); }, 5000);
+setInterval(() => { checkReviewQueue(); }, 500);

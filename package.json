@@ -25,7 +25,7 @@
     "supertest": "^3.0.0"
   },
   "scripts": {
-    "load-test": "echo \"PATCH http://localhost:8080/experiences/manage/0\" | vegeta attack -duration=5s -rate=1000 | vegeta report",
+    "load-test": "echo \"PATCH http://localhost:1337/experiences/manage/0\" | vegeta attack -duration=5s -rate=1000 | vegeta report",
     "test": "mocha --timeout 5000 inventory/test/test.js",
     "start": "nodemon inventory/src/server/index.js"
   },
