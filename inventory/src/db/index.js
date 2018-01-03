@@ -69,7 +69,7 @@ const manageExperience = (id, action) => {
   return models.Experience.update({ is_available: active }, { where: { id } });
 };
 
-const updatePopularity = () => 'Updated Popularity';
+const updatePopularity = (id, bool) => models.Experience.update({ is_popular: bool }, { where: { id } });
 
 exports.addExperience = addExperience;
 exports.addHost = addHost;

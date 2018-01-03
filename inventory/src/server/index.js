@@ -9,6 +9,9 @@ const db = require('../db/index');
 const help = require('./helpers');
 const sendExperiences = require('./workers/app_queue').sendExperiences;
 const reportExperienceUpdate = require('./workers/aggregator_queue').manageExperience;
+const pollAggregatorQueue = require('./workers/aggregator_listener');
+const hostQueue = require('./workers/host_api_worker');
+const reviewQueue = require('./workers/review_api_worker');
 
 db.syncTables()
   .then(() => app.listen(process.env.PORT, () => console.log(`listening on ${process.env.PORT}`)));

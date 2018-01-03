@@ -39,4 +39,4 @@ const checkHostQueue = () => {
   });
 };
 
-setInterval(() => { checkHostQueue(); }, 5000);
+setInterval(() => { checkHostQueue(); }, 500);
