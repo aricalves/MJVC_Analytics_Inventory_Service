@@ -1,10 +1,10 @@
-# Project Name
+# MJVC Analytics - Inventory Service
 
-The project description
+Experience Inventory Service
 
 ## Roadmap
 
-View the project roadmap [here](https://docs.google.com/document/d/1a9sg6WVN6nrXHgrxCmRf5vKxvQK0NZCquNSUx9cuYVs/)
+View the project roadmap [here](https://docs.google.com/document/d/1uBzoSupvIINxqZsHyehcZLodNy4kDPZHoj3GpZlcotE/edit?usp=sharing)
 
 ## Contributing
 
@@ -20,16 +20,10 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for contribution guidelines.
 
 ## Usage
 
-> Some usage instructions
+> `npm i`
+> `npm start`
 
 ## Requirements
 
 - Node 6.9.x
-- Redis 3.2.x
 - Postgresql 9.6.x
-- etc
-
-## Other Information
-
-(TODO: fill this out with details about your project. Suggested ideas: architecture diagram, schema, and any other details from your app plan that sound interesting.)
-
